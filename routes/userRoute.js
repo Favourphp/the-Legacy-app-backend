@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const requireToken = require("../middlewares/verifyToken");
-const multer = require("multer");
+const passport = require("passport");
 
 const {
   registerController,
@@ -12,32 +12,33 @@ const {
   logout,
   getProfile,
   editProfile,
-  deleteAccountController,
-  upgradeController,
 } = require("../controllers/userController");
 
-//multer storage
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "uploads/"); // Set the destination folder for file uploads
-  },
-  filename: (req, file, cb) => {
-    cb(null, file.originalname); // Use the original filename
-  },
-});
-const upload = multer({
-  storage: storage,
-});
 
-router.post("/register", upload.single("profilePhoto"), registerController);
+
+router.post("/register", registerController);
 router.post("/login", loginController);
 router.post("/confirm/:userID", verifyController);
-router.get("/profile", requireToken, getProfile);
-router.put("/edit-user/", upload.single("image"), requireToken, editProfile);
+router.get("/profile", getProfile);
+router.put("/edit-user/",editProfile);
 router.post("/forget-password", forgetPassword);
 router.post("/reset-password/:token", resetPassword);
 router.get("/logout", logout);
-// router.delete("/", requireToken, deleteAccountController); 
-// router.put("/upgrade/:userId", requireToken, upgradeController)
+
+
+router.get("/failed",(req,res)=>{
+  return res.status(401).json({msg:"failed to authorized using google"});
+})
+
+router.get("/success", (req,res) => {
+  return res.redirect(`http://localhost:8081/home`)
+})
+
+
+router.get("/google",passport.authenticate("google", { scope: ['email','profile'] }))
+router.get("/google/callback", passport.authenticate("google",{
+  failureRedirect: '/api/user/failed',
+  successRedirect: "/api/user/success"
+}))
 
 module.exports = router;
