@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const requireToken = require("../middlewares/verifyToken");
+const { generateJWT } = require("../utils/utils");
 const passport = require("passport");
 
 const {
@@ -32,6 +33,11 @@ router.get("/failed",(req,res)=>{
 
 router.get("/success", (req,res) => {
   return res.redirect(`http://localhost:8081/home`)
+})
+
+router.get("/success", (req,res) => {
+  const token =  generateJWT(req.user._id,req.user.role);
+  return res.redirect(`http://localhost:8081/home?token=${token}`)
 })
 
 
