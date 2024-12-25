@@ -16,7 +16,7 @@ const {
 } = require("../controllers/userController");
 
 
-
+ 
 router.post("/register", registerController);
 router.post("/login", loginController);
 router.post("/confirm/:userID", verifyController);
