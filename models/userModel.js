@@ -7,7 +7,6 @@ const userSchema = new mongoose.Schema({
     },
     password: {
         type: String,
-        required: true,
         validate: {
             validator: function (value) {
                 const passwordRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}$/
@@ -19,6 +18,11 @@ const userSchema = new mongoose.Schema({
     confirmationCode:{
         type: String,
         unique: true,
+    },
+    googleId: {
+        type: String,
+        sparse: true,
+        required: false // Store Google ID for OAuth users
     },
     status: {
         type: String,

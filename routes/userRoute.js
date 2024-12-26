@@ -31,9 +31,6 @@ router.get("/failed",(req,res)=>{
   return res.status(401).json({msg:"failed to authorized using google"});
 })
 
-router.get("/success", (req,res) => {
-  return res.redirect(`http://localhost:8081/home`)
-})
 
 router.get("/success", (req,res) => {
   const token =  generateJWT(req.user._id,req.user.role);

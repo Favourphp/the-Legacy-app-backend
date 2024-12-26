@@ -12,7 +12,7 @@ const comparePassword = async (password, dbPassword = "") => {
 
 
 const generateJWT = (userId, role = '', expires = process.env.JWT_EXPIRES) => {
-    const token = jwt.sign({ userId, role }, process.env.JWT_SECRET, { expiresIn: expires });
+    const token = jwt.sign({ userId, role }, process.env.JWT_SECRET, {  expiresIn: '24h' });
     return token;
 }
 

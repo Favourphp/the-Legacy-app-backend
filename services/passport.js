@@ -26,7 +26,7 @@ module.exports = passport.use(
     new GoogleStrategy({
         clientID: process.env.GOOGLE_CLIENT_ID,
         clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-       // callbackURL: "https://tradeet.onrender.com/api/v1/auth/google/callback",
+        //callbackURL: "https://tradeet.onrender.com/api/v1/auth/google/callback",
          callbackURL: "http://localhost:3000/api/user/google/callback",
         passReqToCallback: true,
         scope: ['profile', 'email']
@@ -36,7 +36,7 @@ module.exports = passport.use(
             const user = await UserModel.findOne({email:profile.email});
             if(!user){
                 const {name, email,picture} = profile._json;
-                const newUser = await UserModel.create({fullname:name, email,provider:"Google",avatar:picture,verified:true});
+                const newUser = await UserModel.create({fullName:name, email,provider:"Google",avatar:picture,verified:true});
                 await ProfileModel.create({user:newUser._id});
                 return done(null,newUser._id.toString())
             }
