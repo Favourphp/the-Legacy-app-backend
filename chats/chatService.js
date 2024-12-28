@@ -1,28 +1,17 @@
-const ChatMessage = require('./chatModel');
+const Message = require('./chatModel');
 const UserModel = require('../models/userModel');
 
 class ChatService {
-    async saveMessage({ sender, receiver, content }) {
-        // Fetch sender and receiver details
-        const senderUser = await UserModel.findById(sender).select('fullname email');
-        const receiverUser = await UserModel.findById(receiver).select('fullname email');
-
-        if (!senderUser || !receiverUser) {
-            throw new Error('Sender or receiver not found');
-        }
-
-        // Create and save the new message
-        const newMessage = new ChatMessage({ sender, receiver, content });
-        await newMessage.save();
-
-        console.log("Message saved from:", senderUser.email, "to:", receiverUser.email);
-
-        return {
-            message: newMessage,
-            sender: { id: senderUser._id, fullname: senderUser.fullname, email: senderUser.email },
-            receiver: { id: receiverUser._id, fullname: receiverUser.fullname, email: receiverUser.email },
-        };
+  async saveMessage({ sender, receiver, content }) {
+    try {
+        const newMessage = new Message({ sender, receiver, content });
+        const savedMessage = await newMessage.save();
+        return savedMessage;
+    } catch (error) {
+        console.error("Error saving message:", error);
+        throw new Error("Failed to save message");
     }
+}
 
     // Service Method: getChatHistory
 async getChatHistory(senderId, receiverId, limit = 20, page = 1) {
@@ -66,54 +55,43 @@ async getChatHistory(senderId, receiverId, limit = 20, page = 1) {
   }
   
 
-   async getAllChats(userId) {
-    try {
-        // Fetch all messages where the user is either the sender or the receiver
-        const messages = await ChatMessage.find({
-            $or: [
-                { sender: userId },
-                { receiver: userId }
-            ]
-        }).sort({ timestamp: -1 }); // Sort messages by timestamp descending to get the latest messages first
+    async getAllChats(userId) {
+        try {
+            // Fetch all unique chat partners for the user
+            const messages = await ChatMessage.find({
+                $or: [
+                    { sender: userId },
+                    { receiver: userId }
+                ]
+            }).sort({ timestamp: -1 });
 
-        // Group messages by chat partner
-        const chatPartners = {};
-
-        // Iterate through messages and group them by partner
-        messages.forEach((message) => {
-            const partnerId = message.sender.toString() === userId.toString() ? message.receiver : message.sender;
-
-            if (!chatPartners[partnerId]) {
-                chatPartners[partnerId] = {
-                    partnerId,
-                    messages: [], // Initialize an array to hold all messages for this partner
-                };
-            }
-
-            // Add the current message to the list of messages for this partner
-            chatPartners[partnerId].messages.push({
-                content: message.content,
-                timestamp: message.timestamp,
+            // Group by unique chat partners
+            const chatPartners = {};
+            messages.forEach((message) => {
+                const partnerId = message.sender.toString() === userId.toString() ? message.receiver : message.sender;
+                if (!chatPartners[partnerId]) {
+                    chatPartners[partnerId] = {
+                        partnerId,
+                        lastMessage: message.content,
+                        timestamp: message.timestamp,
+                    };
+                }
             });
-        });
 
-        // Fetch user details for each chat partner
-        const partnerDetails = await Promise.all(
-            Object.keys(chatPartners).map(async (partnerId) => {
-                const user = await UserModel.findById(partnerId).select('fullname email');
-                return {
-                    partner: user,
-                    messages: chatPartners[partnerId].messages,
-                };
-            })
-        );
+            // Fetch user details for the chat partners
+            const partnerDetails = await Promise.all(
+                Object.keys(chatPartners).map(async (partnerId) => {
+                    const user = await UserModel.findById(partnerId).select('fullname email');
+                    return { ...chatPartners[partnerId], partner: user };
+                })
+            );
 
-        return partnerDetails;
-    } catch (error) {
-        console.log('Error fetching all chats', error);
-        throw error;
+            return partnerDetails;
+        } catch (error) {
+            console.log('Error fetching all chats', error);
+            throw error;
+        }
     }
-}
 }
 
 module.exports = new ChatService();

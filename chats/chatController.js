@@ -1,6 +1,7 @@
 const chatService = require('./chatService');
 const { generateRoomId } = require('../utils/utils');
 const mongoose = require('mongoose')
+const Message = require('./chatModel');
 
 
 
@@ -35,33 +36,37 @@ async fetchChatHistory(req, res) {
   async getuserId(req, res) {
     try {
         const { identifier } = req.query; // Accept identifier via query params
-
-        if (!identifier) {
-            return res.status(400).json({ message: 'Identifier is required' });
-        }
-
-        const user = await User.findOne({ username: identifier }); // Replace 'username' with your field
+        const user = await User.findOne({ fullName: identifier });
+    
         if (!user) {
-            return res.status(404).json({ message: 'User not found' });
+          return res.status(404).send('User not found');
         }
-
-        res.json({ userId: user._id, fullName: user.fullName, email: user.email });
-    } catch (error) {
-        console.error('Error retrieving user:', error);
-        res.status(500).json({ message: 'Internal server error' });
+    
+        // Find the chat messages for the user using their ObjectId
+        const messages = await Message.find({ receiver: user._id });
+    
+        if (!messages) {
+          return res.status(404).send('No messages found');
+        }
+    
+        res.json({ success: true, messages });
+      } catch (error) {
+        console.error(error);
+        res.status(500).send({ success: false, message: 'Error fetching chat history', error: error.message });
+      }
     }
-};
 
   // Save a message via REST API (optional, primarily for testing)
-  async saveMessage(req, res) {
+  async saveMessage({ sender, receiver, content }) {
     try {
-      const { sender,receiver, content } = req.body;
-      const savedMessage = await chatService.saveMessage({ sender, receiver, content });
-      res.status(201).json({ success: true, data: savedMessage });
+        const newMessage = new Message({ sender, receiver, content });
+        const savedMessage = await newMessage.save();
+        return savedMessage;
     } catch (error) {
-      res.status(500).json({ success: false, message: 'Failed to save message.', error: error.message });
+        console.error('Error saving message:', error);
+        throw error;
     }
-  }
+}
 
   async fetchAllChats(req, res) {
     try {
@@ -102,3 +107,37 @@ async fetchChatBetweenUsers(req, res) {
 
 
 module.exports = ChatController;
+// const chatService = require('./chatService');
+
+// class ChatController {
+//     async fetchChatHistory(req, res) {
+//         try {
+//             const { senderId, receiverId } = req.params;
+//             const limit = parseInt(req.query.limit, 10) || 20;
+//             const page = parseInt(req.query.page, 10) || 1;
+
+//             const chatHistory = await chatService.getChatHistory(senderId, receiverId, limit, page);
+
+//             if (!chatHistory.messages.length) {
+//                 return res.status(404).json({ success: false, message: 'No chat history found.' });
+//             }
+
+//             res.status(200).json({ success: true, data: chatHistory });
+//         } catch (error) {
+//             console.error(error);
+//             res.status(500).json({ success: false, message: 'Failed to fetch chat history.', error: error.message });
+//         }
+//     }
+
+//     async saveMessage(req, res) {
+//         try {
+//             const { sender, receiver, content } = req.body;
+//             const savedMessage = await chatService.saveMessage({ sender, receiver, content });
+//             res.status(201).json({ success: true, data: savedMessage });
+//         } catch (error) {
+//             res.status(500).json({ success: false, message: 'Failed to save message.', error: error.message });
+//         }
+//     }
+// }
+
+// module.exports = ChatController
