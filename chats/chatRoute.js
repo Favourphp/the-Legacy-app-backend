@@ -12,4 +12,6 @@ router.post('/messages', chatController.saveMessage.bind(chatController));
 // Fetch all chats for a specific user (all conversations the user is part of)
 router.get('/:userId', chatController.fetchAllChats.bind(chatController));
 
+router.get('/user', chatController.getuserId.bind(chatController));
+
 module.exports = router;

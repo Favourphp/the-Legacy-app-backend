@@ -32,7 +32,25 @@ async fetchChatHistory(req, res) {
       });
     }
   }
-  
+  async getuserId(req, res) {
+    try {
+        const { identifier } = req.query; // Accept identifier via query params
+
+        if (!identifier) {
+            return res.status(400).json({ message: 'Identifier is required' });
+        }
+
+        const user = await User.findOne({ username: identifier }); // Replace 'username' with your field
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        res.json({ userId: user._id, fullName: user.fullName, email: user.email });
+    } catch (error) {
+        console.error('Error retrieving user:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
 
   // Save a message via REST API (optional, primarily for testing)
   async saveMessage(req, res) {
