@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const User = require("../models/userModel");
+const SurveyResponse = require("../models/surveyModel");
 const short = require("short-uuid");
 const {
   sendConfirmationEmail,
@@ -309,6 +310,40 @@ const editProfile = async (req, res) => {
   }
 };
 
+const submitSurvey = async (req, res) => {
+  const { userId, responses } = req.body;
+
+    // Validate userId exists
+    const user = await User.findById(userId);
+    if (!user) {
+        return res.status(404).json({ error: 'User not found.' });
+    }
+
+  if (!userId || !responses || !Array.isArray(responses)) {
+    return res.status(400).json({ error: 'Invalid request data' });
+  }
+
+  try {
+    const surveyResponse = new SurveyResponse({ userId, responses });
+    await surveyResponse.save();
+    res.status(201).json({ message: 'Survey responses saved successfully!' });
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error', details: error.message });
+  }
+};
+
+const getUserSurveyResonse = async (req, res) => {
+  try {
+    const surveyResponses = await SurveyResponse.findOne({ userId: req.params.userId });
+    if (!surveyResponses) {
+      return res.status(404).json({ error: 'No survey responses found for this user' });
+    }
+    res.status(200).json(surveyResponses);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error', details: error.message });
+  }
+};
+
 module.exports = {
   loginController,
   registerController,
@@ -318,4 +353,6 @@ module.exports = {
   logout,
   getProfile,
   editProfile,
+  submitSurvey,
+  getUserSurveyResonse,
 };

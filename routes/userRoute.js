@@ -13,7 +13,10 @@ const {
   logout,
   getProfile,
   editProfile,
+  submitSurvey,
+  getUserSurveyResonse
 } = require("../controllers/userController");
+const verifyToken = require("../middlewares/verifyToken");
 
 
  
@@ -25,7 +28,8 @@ router.put("/edit-user/",editProfile);
 router.post("/forget-password", forgetPassword);
 router.post("/reset-password/:token", resetPassword);
 router.get("/logout", logout);
-
+router.post('/survey/submit-survey', submitSurvey);
+router.get('/survey/:userId', getUserSurveyResonse);
 
 router.get("/failed",(req,res)=>{
   return res.status(401).json({msg:"failed to authorized using google"});
