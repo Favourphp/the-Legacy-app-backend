@@ -19,6 +19,9 @@ const userSchema = new mongoose.Schema({
         type: String,
         unique: true,
     },
+    profileImage: {
+        type: String,
+      },
     googleId: {
         type: String,
         sparse: true,

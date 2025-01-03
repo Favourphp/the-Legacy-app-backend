@@ -7,6 +7,7 @@ const {
   sendConfirmationEmail,
   forgetPasswordEmail,
 } = require("../config/mailTransport");
+const cloudinary = require("../config/cloudinary");
 
 //=========================Register user=======================================
 const registerController = async (req, res) => {
@@ -290,17 +291,24 @@ const getProfile = async (req, res) => {
 
 //================== EDIT USER================
 const editProfile = async (req, res) => {
-  const userID = req.user._id;
 
   try {
-    const user = await User.findById(userID);
-
+    const {userID} = req.params;
+    const user = await User.findOne({
+      _id: userID,
+    });
     if (!user) {
       return res.status(404).json({message: "User not found"});
     }
 
     user.fullName = req.body.fullName || user.fullName;
     
+    if (req.file) {
+      // If a file is present, upload the new profile photo to cloudinary
+      const uploadResult = await cloudinary.uploader.upload(req.file.path);
+      user.profileImage = uploadResult.secure_url; // Assign the new profile photo URL
+    }
+
 
     await user.save();
 

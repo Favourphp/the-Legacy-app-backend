@@ -1,21 +1,17 @@
 const multer = require('multer');
-const uuidv4 = require('uuid').v4; 
-const path = require('path');
+
 
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '../../uploads');
-    cb(null, uploadDir);
+    cb(null, "uploads/"); // Set the destination folder for file uploads
   },
   filename: (req, file, cb) => {
-    const originalName = file.originalname;
-    const fileExtension = originalName.split('.').pop();
-    const filename = `${Date.now()}-${uuidv4()}.${fileExtension}`;
-    cb(null, filename);
+    cb(null, file.originalname); // Use the original filename
   },
 });
-
-const upload = multer({ storage: storage });
+const upload = multer({
+  storage: storage,
+});
 
 module.exports = upload
