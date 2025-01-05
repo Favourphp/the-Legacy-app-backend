@@ -8,6 +8,7 @@ const http = require("http");
 const WebSocket = require("ws");
 const authRoute = require("./routes/userRoute");
 const chatRoute = require("./chats/chatRoute");
+const businessRoute = require("./routes/businessRoute");
 const ChatController = require("./chats/chatController"); // Import ChatController
 const chatService = require("./chats/chatService"); // Import chatService
 
@@ -46,6 +47,7 @@ app.use(express.urlencoded({ extended: true }));
 // Routes
 app.use("/api/user", authRoute);
 app.use("/api/chats", chatRoute);
+app.use("/api/businesses", businessRoute);
 
 // WebSocket logic
 const wss = new WebSocket.Server({ noServer: true });

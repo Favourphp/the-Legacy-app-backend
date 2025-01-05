@@ -4,14 +4,34 @@ const UserModel = require('../models/userModel');
 class ChatService {
   async saveMessage({ sender, receiver, content }) {
     try {
-        const newMessage = new Message({ sender, receiver, content });
-        const savedMessage = await newMessage.save();
-        return savedMessage;
+      // Save the message to the database
+      const newMessage = new Message({ sender, receiver, content });
+      const savedMessage = await newMessage.save();
+
+      // Notification Logic
+      const notificationPayload = {
+        Message: JSON.stringify({
+          sender,
+          receiver,
+          content,
+          timestamp: new Date().toISOString(),
+        }),
+        TopicArn: "arn:aws:sns:us-east-1:123456789012:ChatNotifications", // Replace with your SNS Topic ARN
+      };
+
+      try {
+        const snsResult = await sns.publish(notificationPayload).promise();
+        console.log("Notification sent:", snsResult);
+      } catch (snsError) {
+        console.error("Error sending notification:", snsError);
+      }
+
+      return savedMessage;
     } catch (error) {
-        console.error("Error saving message:", error);
-        throw new Error("Failed to save message");
+      console.error("Error saving message:", error);
+      throw new Error("Failed to save message");
     }
-}
+  }
 
     // Service Method: getChatHistory
 async getChatHistory(senderId, receiverId, limit = 20, page = 1) {
