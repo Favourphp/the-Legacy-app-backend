@@ -2,6 +2,7 @@ const chatService = require('./chatService');
 const { generateRoomId } = require('../utils/utils');
 const mongoose = require('mongoose')
 const Message = require('./chatModel');
+const { sendChatNotification } = require('./chatService');
 
 
 
@@ -33,6 +34,8 @@ async fetchChatHistory(req, res) {
       });
     }
   }
+
+   
   async getuserId(req, res) {
     try {
         const { identifier } = req.query; // Accept identifier via query params
@@ -80,6 +83,8 @@ async fetchChatHistory(req, res) {
       res.status(500).json({ success: false, message: "Error fetching chat history", error: error.message });
     }
 }
+
+
 
 async fetchChatBetweenUsers(req, res) {
     try {

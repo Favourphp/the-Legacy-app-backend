@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "the-legacy-app-445407",
+  "private_key_id": "fe4637a716cc3fa6c9e84982acb6be1f2cc0604d",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDC6zb7+ZuuYXSC\nEyr1PmvcO2pOq+Uu9250nJdTFTWo3ix7SLw/4NUa8z/HqFuJweK80jEhXTwWnFLS\nR979RVuDu/xx/poK61lwQkBqC+QUqW4/NBGDoq8HDWgzlIybRNRp3Xt9fCVnPDc7\neOHyNF4OeaIMBa9Dh6fnKoGXbVaqEKHCWxK2iRRqxCUC7nrq47n79mCIuC9ppIDE\nyVWv4KoP9pCooumYW+qWZHg8cFIjYihi9Oi+11daVFCEQsK2A15OKrq0Vtwc9ntu\nFnwhxcoJSHsOgUOUUPOPmfTfkkhZQ4UgcB2RH27xb5ZvOYI5ItMNau/6t5SaQDdg\nMXG3inJpAgMBAAECggEAD9M6qheDDmkxeollhfa/mWhQ17qjXKj7FJ2iuDydwtbo\nQ/QiUIoHqJdSONAQP9gizqi+vhI3RDCvQAz/a48GKzpdIxYu2dnExP/5Vy1y+EMk\nmnNhmU82faXsLVqPVeCEjGR5LQrMxfEWHOPSGFuBvWlzq3KKCbte+ZOHukxxalTT\nWSeM4tYx3YL2fflH/+goC6l2TGzRWxTcv+23AaaosJ1RB+0VYpeLgWnAI7a68MV5\nm86+nnRyVZf0BNBZPBsPris1oq7p9COyEzpgozEIwr2y/mMvNCOq0H5CoVphZEbI\nlQd5jQR3FOmmkRYeJTEG4Cqa29n7TvzL63jTyRCRGQKBgQDtU5aJjFe6f2QmChni\nbbWkJpqE64Qc8JXyr05ZL6L+I5lrvn+JVsUNSzrj4pTaaFqYKXX9r7qkE7afTPYH\n14bZoKTqxCblaCg6D+BptsQMbkXfkmhBy0WroFi3jcLkjf+AdNCFwLsM0pYoKIhe\nuKSaMPNjLWYAMFkdcn99GCQ9dQKBgQDSQWsVjiazWePnrCQ/ZCE7w1cYuxFcf8xV\n/palcoVTwGNyr2tIFk6mhvpzVNHaj+iVo8SUvDHS7JEvf8m5ffdJzQBz/evSSEe4\nw3VzcSxKaQn7O6ZsCvb6yTvw8XCSZEWa0LcyTfMa4y2nNMj90JOUuSUn2wOxihfY\nDqYE7Aq+pQKBgEf0VenyMQ8MXLLj0SFDnhTc13CBb5bOosfnuttzg/mFlZiDM2vS\ncQAs1PgO1I67oOwNdgaqZu4kQ/RcgyOxhuMov5emTRy0za187s9eaGZUcL7uRsnb\n9Y2pmfxc8MAXBWZPBIHpA01J89jNITuGw/Ez8jcZpplcD0jMVDb7QNGZAoGBALyA\nMgVNQJ0jRhR6XLUIjFMMOpXNgS8w1H10lpMWLTp9DavQYZprhW//K6MitFIDGz6t\naJ0AbJrxxOiU5MIMkRv1UyaqzDXm34ZilnY9TLwZl/1J6VaMLgmBSOAnVgmpJE48\nOUI8aGv+qPtzc4865FU9+HXXAWS2rdHisC1RggCRAoGBAIN00wmx3fczXe+8KnfS\n7zdVNqQhkvxQKX+I3dJoP4kqDRv5N6rKmXyl61K49gKX0NgUkw0uj0qaztcFJdW/\nTMxNB6MMyQ4rrjO0dMuMAgfeokSRtJwRWygx8obahq6oYz6I0gZSiv68gSO6mV3K\nlYL/TX/RpVo+JDj8zMo9zeIe\n-----END PRIVATE KEY-----\n",
+  "client_email": "legacy-app@the-legacy-app-445407.iam.gserviceaccount.com",
+  "client_id": "112570554309351591399",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/legacy-app%40the-legacy-app-445407.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
