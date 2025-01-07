@@ -59,7 +59,7 @@ app.use("/api/notification", notificationRoute);
 // Initialize Pub/Sub client
 const pubSubClient = new PubSub({
   projectId: "the-legacy-app-445407", // Update with your project ID
-  keyFilename: "./the-legacy-app-445407-fe4637a716cc.json", // Path to your service account key file
+  keyFilename: "", // Path to your service account key file
 });
 
 const connectedUsers = new Map(); // Map to store connected users by userId
