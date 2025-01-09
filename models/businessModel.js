@@ -14,11 +14,17 @@ const businessSchema = new mongoose.Schema({
     ],
     required: true,
   },
+  category: { type: String, required: true },
   businessName: { type: String, required: true },
-  businessImage: { type: String }, // Store image URL or file path
+  businessImages: [String], // Array for multiple images
   address: { type: String, required: true },
   rating: { type: Number, min: 0, max: 5, default: 0 },
-  description: { type: String, required: true },
+  description: { type: String },
+  fees: { type: Number, required: false }, // New field for fees
+  years: { type: Number, required: false }, // New field for years
+  clients: { type: Number, required: false }, // New field for clients
+  headstoneNames: [String], 
+  reviews:{ type: Number, required: false }, 
 });
 
 const Business = mongoose.model('Business', businessSchema);

@@ -44,7 +44,7 @@ const forgetPasswordEmail = async (header, firstName, email, resetToken) => {
     const sendMail = await mailTransport.sendMail({
       from: process.env.EMAIL_ADDRESS,
       to: email,
-      subject: "Password Reset from EventTrack",
+      subject: "Password Reset from Legacy App",
       html: `<h1>Password Reset</h1>
         <h2>Hello ${firstName},</h2>
         <p>You are receiving this email because you (or someone else) has requested the reset of the password for your account.</p>

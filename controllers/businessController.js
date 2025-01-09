@@ -4,38 +4,72 @@ const mongoose = require('mongoose');
 const cloudinary = require('../config/cloudinary');
 
 const createBusinessController = async (req, res) => {
-    const { category, businessName, address, rating, description } = req.body;
-  
-    try {
-      let businessImage = null;
-  
-      // Handle image upload if a file is present
-      if (req.file) {
-        const uploadResult = await cloudinary.uploader.upload(req.file.path);
-        businessImage = uploadResult.secure_url; // Assign the uploaded image URL to businessImage
-      }
-  
-      // Create a new business entry
-      const newBusiness = new Business({
-        category,
-        businessName,
-        businessImage, // Add the image URL (if uploaded)
-        address,
-        rating,
-        description,
-      });
-  
-      // Save the business to the database
-      const savedBusiness = await newBusiness.save();
-  
-      // Respond with the saved business
-      res.status(201).json(savedBusiness);
-    } catch (error) {
-      console.error('Error creating business:', error);
-      res.status(500).json({ message: 'Failed to create business' });
+  const { 
+    category, 
+    businessName, 
+    address, 
+    rating, 
+    description, 
+    fees, 
+    years, 
+    clients, 
+    headstoneNames 
+  } = req.body;
+
+  try {
+    let businessImages = [];
+
+    // Handle image uploads
+    if (req.files && req.files.length > 0) {
+      const uploadPromises = req.files.map((file) =>
+        cloudinary.uploader.upload(file.path)
+      );
+      const uploadResults = await Promise.all(uploadPromises);
+      businessImages = uploadResults.map((result) => result.secure_url);
     }
-  };
-  
+
+    // Build the business object
+    const newBusinessData = {
+      category,
+      businessName,
+      businessImages: businessImages,
+      address,
+      rating,
+      description,
+      fees, // Store as a number in the database
+      years,
+      clients,
+    };
+
+    // Add headstoneNames only if the category is "headstones"
+    if (category.toLowerCase() === "headstones" && headstoneNames) {
+      newBusinessData.headstoneNames = Array.isArray(headstoneNames)
+        ? headstoneNames
+        : [headstoneNames];
+    }
+
+    // Create a new business entry
+    const newBusiness = new Business(newBusinessData);
+    console.log("Uploaded Files:", req.files);
+
+
+    // Save the business to the database
+    const savedBusiness = await newBusiness.save();
+
+    // Format fees with a dollar sign before sending the response
+    const responseBusiness = {
+      ...savedBusiness._doc,
+      fees: `$${savedBusiness.fees.toLocaleString()}`, // Format as "$1,000" for example
+    };
+
+    // Respond with the formatted business
+    res.status(201).json(responseBusiness);
+  } catch (error) {
+    console.error("Error creating business:", error);
+    res.status(500).json({ message: "Failed to create business" });
+  }
+};
+
 
   const getBusinessesController = async (req, res) => {
     const { category } = req.params;

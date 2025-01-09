@@ -3,7 +3,7 @@ const router = express.Router();
 const requireToken = require("../middlewares/verifyToken");
 const { generateJWT } = require("../utils/utils");
 const passport = require("passport");
-const upload = require("../config/multer");
+const {uploadSingle} = require("../config/multer");
 const {
   registerController,
   loginController,
@@ -24,7 +24,7 @@ router.post("/register", registerController);
 router.post("/login", loginController);
 router.post("/confirm/:userID", verifyController);
 router.get("/profile", getProfile);
-router.put("/edit-user/:userID", upload.single("profileImage"),editProfile);
+router.put("/edit-user/:userID", uploadSingle,editProfile);
 router.post("/forget-password", forgetPassword);
 router.post("/reset-password/:token", resetPassword);
 router.get("/logout", logout);

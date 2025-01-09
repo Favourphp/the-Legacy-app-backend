@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const upload = require('../config/multer');
+const {uploadMultiple} = require('../config/multer');
 const { 
     createBusinessController, 
     deleteBusinessController, 
@@ -12,9 +12,9 @@ const {
  } = require('../controllers/businessController');
 
 
-router.post('/', upload.single('businessImage'), createBusinessController)  
+router.post('/', uploadMultiple, createBusinessController)  
 router.get('/:category', getBusinessesController);
-router.put('/:id', upload.single('businessImage'), updateBusinessController);
+router.put('/:id', uploadMultiple, updateBusinessController);
 router.delete('/:id', deleteBusinessController);
 router.post('/create-contact', contactedBusinessController)
 router.get('/:userId', getContactedBusinessesController)

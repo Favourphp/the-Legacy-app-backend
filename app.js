@@ -13,6 +13,7 @@ const chatRoute = require("./chats/chatRoute");
 const notificationRoute = require("./notifications/notificationRoute");
 const businessRoute = require("./routes/businessRoute");
 const Notification = require("./notifications/notificationModel");
+const partnerRoute = require("./routes/partnerRoute");
 
 // Initialize express
 const app = express();
@@ -28,7 +29,7 @@ require("./services/passport");
 app.use(logger("dev"));
 app.use(
   cors({
-    origin: "http://localhost:8081", // Update with actual frontend URL
+    origin: "*", // Update with actual frontend URL
     methods: "GET,POST,PUT,DELETE",
     credentials: true,
   })
@@ -55,6 +56,7 @@ app.use("/api/user", authRoute);
 app.use("/api/chats", chatRoute);
 app.use("/api/businesses", businessRoute);
 app.use("/api/notification", notificationRoute);
+app.use("/api/partner", partnerRoute);
 
 // Initialize Pub/Sub client
 const pubSubClient = new PubSub({
