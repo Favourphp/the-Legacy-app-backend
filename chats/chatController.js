@@ -8,32 +8,46 @@ const { sendChatNotification } = require('./chatService');
 
 class ChatController {
     // Controller Method: fetchChatHistory
-async fetchChatHistory(req, res) {
-    try {
-      const { senderId, receiverId } = req.params;
-      const limit = parseInt(req.query.limit, 10) || 20;
-      const page = parseInt(req.query.page, 10) || 1;
-  
-      // Call the service method to get chat history
-      const chatHistory = await chatService.getChatHistory(senderId, receiverId, limit, page);
-  
-      if (!chatHistory.messages || chatHistory.messages.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: 'No chat history found between the users.',
-        });
-      }
-  
-      res.status(200).json({ success: true, data: chatHistory });
-    } catch (error) {
-      console.log(error);  // Log for debugging
-      res.status(500).json({
-        success: false,
-        message: 'Failed to fetch chat history.',
-        error: error.message,
+    async fetchChatHistory(senderId, receiverId, limit, page) {
+      const skip = (page - 1) * limit;
+    
+      // Fetch messages from the Chat Model
+      const messages = await Message.find({
+        $or: [
+          { sender: senderId, receiver: receiverId },
+          { sender: receiverId, receiver: senderId },
+        ],
+      })
+        .sort({ timestamp: -1 }) // Sort by most recent
+        .skip(skip)
+        .limit(limit);
+    
+      const totalMessages = await Message.countDocuments({
+        $or: [
+          { sender: senderId, receiver: receiverId },
+          { sender: receiverId, receiver: senderId },
+        ],
       });
+    
+      return {
+        messages,
+        pagination: {
+          total: totalMessages,
+          limit,
+          page,
+          totalPages: Math.ceil(totalMessages / limit),
+        },
+      };
     }
-  }
+  async upload(req, res) {
+    if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+    }
+    res.status(200).json({
+        message: "File uploaded successfully",
+        filePath: `/uploads/${req.file.filename}`,
+    });
+}
 
    
   async getuserId(req, res) {
@@ -112,37 +126,3 @@ async fetchChatBetweenUsers(req, res) {
 
 
 module.exports = ChatController;
-// const chatService = require('./chatService');
-
-// class ChatController {
-//     async fetchChatHistory(req, res) {
-//         try {
-//             const { senderId, receiverId } = req.params;
-//             const limit = parseInt(req.query.limit, 10) || 20;
-//             const page = parseInt(req.query.page, 10) || 1;
-
-//             const chatHistory = await chatService.getChatHistory(senderId, receiverId, limit, page);
-
-//             if (!chatHistory.messages.length) {
-//                 return res.status(404).json({ success: false, message: 'No chat history found.' });
-//             }
-
-//             res.status(200).json({ success: true, data: chatHistory });
-//         } catch (error) {
-//             console.error(error);
-//             res.status(500).json({ success: false, message: 'Failed to fetch chat history.', error: error.message });
-//         }
-//     }
-
-//     async saveMessage(req, res) {
-//         try {
-//             const { sender, receiver, content } = req.body;
-//             const savedMessage = await chatService.saveMessage({ sender, receiver, content });
-//             res.status(201).json({ success: true, data: savedMessage });
-//         } catch (error) {
-//             res.status(500).json({ success: false, message: 'Failed to save message.', error: error.message });
-//         }
-//     }
-// }
-
-// module.exports = ChatController

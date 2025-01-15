@@ -10,7 +10,7 @@ const {
   logout,
   getProfile,
   editProfile,
-} = require("../controllers/userController");
+} = require("../controllers/partnerController");
 
 
 

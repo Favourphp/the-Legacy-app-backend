@@ -45,6 +45,7 @@ const partnerSchema = new mongoose.Schema({
             message: 'Invalid email address',
         }
     },
+    businessId: { type: mongoose.Schema.Types.ObjectId, ref: 'Business' },
    
     displayName: {
         type: String

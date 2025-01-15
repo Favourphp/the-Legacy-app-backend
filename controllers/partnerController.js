@@ -1,6 +1,8 @@
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const Partner = require("../models/partnerModel");
+const Business = require("../models/businessModel");
+const mongoose = require("mongoose");
 
 const short = require("short-uuid");
 const {
@@ -11,69 +13,65 @@ const cloudinary = require("../config/cloudinary");
 
 //=========================Register user=======================================
 const registerController = async (req, res) => {
-  try {
-    // const token = jwt.sign({ email: req.body.email }, process.env.JWT_SECRET);
+    try {
+      const { fullName, email, password, password2, businessId } = req.body;
+  
+      // Validate businessId
+      if (!mongoose.Types.ObjectId.isValid(businessId)) {
+        return res.status(400).json({ message: 'Invalid business ID' });
+      }
+  
+      // Check if business exists
+      const business = await Business.findById(businessId);
+      if (!business) {
+        return res.status(404).json({ message: 'Business not found' });
+      }
+  
+      // Check if user with the same email already exists
+      const existingUser = await Partner.findOne({ email });
+      if (existingUser) {
+        return res.status(400).json({ message: 'User already exists' });
+      }
+  
+      if (password !== password2) {
+        return res.status(400).json({ message: 'Passwords do not match' });
+      }
+  
+      // Hash the password
+      const hashedPassword = await bcrypt.hash(password, 10);
 
-    const {
-      fullName,
-      email,
-      password,
-      password2,
-    } = req.body;
-
-    //Check if user with the same email already exists
-    const existingUser = await Partner.findOne({
-      email: email,
-    });
-    if (existingUser) {
-      return res.status(400).json({
-        message: "User already exists",
+      const confirmationCode = Math.floor(10000 + Math.random() * 90000);// generate 5 digits number
+      console.log(confirmationCode);
+  
+      // Create the partner
+      const partner = await Partner.create({
+        fullName,
+        email,
+        password: hashedPassword,
+        confirmationCode: confirmationCode,
+        businessId: business._id, // Link to the business
       });
-    }
-    if (password !== password2) {
-      return res.status(400).json({
-        message: "the passwords do not match",
+
+      const userID = partner._id.toString();
+      sendConfirmationEmail(
+        req.headers.host,
+        partner.firstName, 
+        partner.email,
+        partner.confirmationCode,
+        userID
+      );
+  
+      return res.status(201).json({
+        message: 'User registered successfully',
+        userId: partner._id,
+        businessId: partner.businessId,
       });
+    } catch (error) {
+      console.error('Error registering partner:', error);
+      return res.status(500).json({ message: 'An error occurred during registration' });
     }
-    
-    //Hash the password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Generate password reset token
-    const confirmationCode = Math.floor(10000 + Math.random() * 90000);// generate 5 digits number
-    console.log(confirmationCode);
-    // Create and save a new user
-    const user = await User.create({
-      fullName,
-      email,
-      password: hashedPassword,
-      confirmationCode: confirmationCode,
-      status: "pending",
-    });
-    // console.log(user._id.toString());
-    const userID = user._id.toString();
-    sendConfirmationEmail(
-      req.headers.host,
-      user.firstName, 
-      user.email,
-      user.confirmationCode,
-      userID
-    );
-
-    // Return a success response
-    return res.status(201).json({
-      message: "User registered successfully",
-      userId: userID,
-    });
-  } catch (error) {
-    // Handling errors
-    console.error("Error registering user: ", error);
-    return res.status(500).json({
-      message: "An error occurred during registration",
-      error: error,
-    });
-  }
-};
+  };
+  
 
 //================ Verify controller ===========================
 const verifyController = async (req, res) => {
@@ -104,67 +102,66 @@ const verifyController = async (req, res) => {
 
 //================== LOGIN USER =======================
 const loginController = async (req, res) => {
-  const {email, password} = req.body;
-  // Generate password reset token
-  // const confirmationCode = short.generate(); // 73WakrfVbNJBaAmhQtEeDv
-
-  try {
-    const foundParnter = await Partner.findOne({
-      email: email,
-    });
-
-    //check verification
-    if (foundPartner.status !== "Active") {
-      return res.status(401).send({
-        message: "Pending Account. Please Verify Your Email",
-      });
-    }
-
-    if (!foundPartner) {
-      res.status(404).json({
-        message: "Invalid Credentials - User not found",
-      }); //in production, only 'Invalid Credentials'
-    }
-
-    const checkPassword = await bcrypt.compare(password, foundPartner.password);
-
-    if (!checkPassword) {
-      res.status(401).json({
-        message: "Invalid Credentials - Wrong password",
-      }); //in production, only 'Invalid Credentials'
-    } else {
+    const { email, password } = req.body;
+  
+    try {
+      // Find the partner and populate the business details
+      const foundPartner = await Partner.findOne({ email }).populate("businessId");
+  
+      if (!foundPartner) {
+        return res.status(404).json({
+          message: "Invalid Credentials - User not found", // In production, use 'Invalid Credentials'
+        });
+      }
+  
+      // Check account status
+      if (foundPartner.status !== "Active") {
+        return res.status(401).json({
+          message: "Pending Account. Please Verify Your Email",
+        });
+      }
+  
+      // Verify the password
+      const checkPassword = await bcrypt.compare(password, foundPartner.password);
+      if (!checkPassword) {
+        return res.status(401).json({
+          message: "Invalid Credentials - Wrong password", // In production, use 'Invalid Credentials'
+        });
+      }
+  
+      // Generate JWT token
       const token = jwt.sign(
         {
           userId: foundPartner._id,
           email: foundPartner.email,
           fullName: foundPartner.fullName,
-      
         },
         process.env.JWT_SECRET,
-        {
-          expiresIn: "1hr",
-        }
+        { expiresIn: "1hr" }
       );
-
-     // Extract the first name from the fullName
-     const firstName = foundPartner.fullName.split(' ')[0];
-
-     return res.status(200).json({
-       message: "Welcome to The Legacy",
-       token: token,
-       user: {
-         id: foundPartner._id,
-         email: foundPartner.email,
-         firstName: firstName, // Include the first name
-       },
-     });
-   }
-  } catch (error) {
-    return res.status(500).json({
-      message: "Error While Trying To Login, Try Again",
-    });
-  }
-};
+  
+      // Extract the first name from fullName
+      const firstName = foundPartner.fullName.split(" ")[0];
+  
+      // Respond with token and user details, including business
+      return res.status(200).json({
+        message: "Welcome to The Legacy",
+        token: token,
+        user: {
+          id: foundPartner._id,
+          email: foundPartner.email,
+          firstName: firstName, // Include the first name
+          business: foundPartner.businessId, // Includes populated business details
+        },
+      });
+    } catch (error) {
+      console.error("Error during login:", error);
+      return res.status(500).json({
+        message: "Error While Trying To Login, Try Again",
+      });
+    }
+  };
+  
 //================ FORGET PASSWORD ===============
 const forgetPassword = async (req, res) => {
   try {

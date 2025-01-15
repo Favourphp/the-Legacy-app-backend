@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const businessSchema = new mongoose.Schema({
+  
     
   category: {
     type: String,

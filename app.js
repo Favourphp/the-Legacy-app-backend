@@ -1,3 +1,4 @@
+// Required dependencies
 require("dotenv").config();
 const express = require("express");
 const logger = require("morgan");
@@ -8,11 +9,17 @@ const { PubSub } = require("@google-cloud/pubsub");
 const http = require("http");
 const WebSocket = require("ws");
 
+
+
+const Message = require("./chats/chatModel");
+const Notification = require("./notifications/notificationModel");
+const cloudinary = require("./config/cloudinary");
+
+// Routes
 const authRoute = require("./routes/userRoute");
 const chatRoute = require("./chats/chatRoute");
 const notificationRoute = require("./notifications/notificationRoute");
 const businessRoute = require("./routes/businessRoute");
-const Notification = require("./notifications/notificationModel");
 const partnerRoute = require("./routes/partnerRoute");
 
 // Initialize express
@@ -60,7 +67,7 @@ app.use("/api/partner", partnerRoute);
 
 // Initialize Pub/Sub client
 const pubSubClient = new PubSub({
-  projectId: "the-legacy-app-445407", // Update with your project ID
+  projectId: "", // Update with your project ID
   keyFilename: "", // Path to your service account key file
 });
 
@@ -84,13 +91,37 @@ wss.on("connection", (ws) => {
       }
 
       if (parsedMessage.type === "sendMessage") {
-        const { senderId, receiverId, content } = parsedMessage;
+        const { senderId, receiverId, content, image } = parsedMessage;
 
-        // Save the message to the database
+        let imagePath = null;
+
+        if (image) {
+          // Upload image to Cloudinary
+          const uploadResponse = await cloudinary.uploader.upload( `data:image/png;base64,${image}`, {
+            folder: "chat_images",
+            public_id: `${Date.now()}_${senderId}`, 
+            resource_type: "image", // Specify the resource type
+          });
+  
+          imagePath = uploadResponse.secure_url; // Cloudinary's secure URL
+        }
+
+        // Save the message to the Chat model
+        const newChatMessage = new Message({
+          sender: senderId,
+          receiver: receiverId,
+          content,
+          image: imagePath,
+          timestamp: new Date(),
+        });
+        await newChatMessage.save();
+
+        // Save the notification to the Notification model
         const newNotification = new Notification({
           sender: senderId,
           receiver: receiverId,
           content,
+          image: imagePath,
           timestamp: new Date(),
           read: false,
         });
@@ -103,6 +134,8 @@ wss.on("connection", (ws) => {
               type: "receiveMessage",
               senderId,
               content,
+              image: imagePath,
+              timestamp: new Date(),
             })
           );
         } else {
@@ -110,6 +143,8 @@ wss.on("connection", (ws) => {
           await publishNotification("notifications-topic", {
             receiverId,
             content,
+            image: imagePath,
+            timestamp: new Date(),
           });
         }
       }
@@ -146,14 +181,15 @@ async function listenForNotifications(subscriptionName) {
   subscription.on("message", async (message) => {
     try {
       const data = JSON.parse(message.data);
-      const { receiverId, content } = data;
+      const { receiverId, content, image, timestamp } = data;
 
       console.log(`Processing notification for ${receiverId}: ${content}`);
 
       const newNotification = new Notification({
         receiver: receiverId,
         content,
-        timestamp: new Date(),
+        image,
+        timestamp,
         read: false,
       });
       await newNotification.save();
@@ -161,7 +197,7 @@ async function listenForNotifications(subscriptionName) {
       const wsClient = connectedUsers.get(receiverId);
       if (wsClient) {
         wsClient.send(
-          JSON.stringify({ type: "receiveMessage", content })
+          JSON.stringify({ type: "receiveMessage", content, image, timestamp })
         );
       }
 
