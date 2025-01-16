@@ -1,5 +1,4 @@
 const chatService = require('./chatService');
-const { generateRoomId } = require('../utils/utils');
 const mongoose = require('mongoose')
 const Message = require('./chatModel');
 const { sendChatNotification } = require('./chatService');
@@ -95,29 +94,6 @@ class ChatController {
         res.status(200).json({ success: true, data: chatHistory });
     } catch (error) {
       res.status(500).json({ success: false, message: "Error fetching chat history", error: error.message });
-    }
-}
-
-
-
-async fetchChatBetweenUsers(req, res) {
-    try {
-        const { senderId, receiverId } = req.params;
-
-        // Validate customerId and sellerId as ObjectIds
-        if (!mongoose.Types.ObjectId.isValid(senderId) || !mongoose.Types.ObjectId.isValid(receiverId)) {
-            return res.status(400).json({ success: false, message: 'Invalid customer or seller ID.' });
-        }
-
-        const sender = mongoose.Types.ObjectId(senderId); // Ensure valid ObjectId
-        const receiver = mongoose.Types.ObjectId(receiverId); // Ensure valid ObjectId
-
-        // Fetch chat history directly between sender and receiver
-        const chatHistory = await chatService.getChatHistoryBetweenUsers(sender, receiver);
-
-        res.status(200).json({ success: true, data: chatHistory });
-    } catch (error) {
-        res.status(500).json({ success: false, message: "Error fetching chat history", error: error.message });
     }
 }
 

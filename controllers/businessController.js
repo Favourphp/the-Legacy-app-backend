@@ -13,6 +13,7 @@ const createBusinessController = async (req, res) => {
     fees, 
     years, 
     clients, 
+    phoneNumber,
     headstoneNames 
   } = req.body;
 
@@ -39,6 +40,7 @@ const createBusinessController = async (req, res) => {
       fees, // Store as a number in the database
       years,
       clients,
+      phoneNumber,
     };
 
     // Add headstoneNames only if the category is "headstones"
@@ -85,30 +87,45 @@ const createBusinessController = async (req, res) => {
 
   const updateBusinessController = async (req, res) => {
     const { id } = req.params;
-    const { category, businessName, address, rating, description } = req.body;
-    const businessImage = req.file ? req.file.path : null;
+    const { businessName, address, rating, description, fees, years, clients, phoneNumber } = req.body;
   
     try {
-      const updatedBusiness = await Business.findByIdAndUpdate(
-        id,
-        { category, businessName, businessImage, address, rating, description },
-        { new: true }
-      );
-      if (!updatedBusiness) return res.status(404).json({ message: 'Business not found' });
-       if (req.file) {
-            // If a file is present, upload the new profile photo to cloudinary
-            const uploadResult = await cloudinary.uploader.upload(req.file.path);
-            updatedBusiness.businessImage = uploadResult.secure_url; // Assign the new profile photo URL
-          }
-   
-          await updatedBusiness.save();
-
+      // Find the business
+      const business = await Business.findById(id);
+      if (!business) {
+        return res.status(404).json({ message: 'Business not found' });
+      }
+  
+      // Update business fields
+      business.businessName = businessName || business.businessName;
+      business.address = address || business.address;
+      business.rating = rating || business.rating;
+      business.description = description || business.description;
+      business.fees = fees || business.fees;
+      business.years = years || business.years;
+      business.clients = clients || business.clients;
+      business.phoneNumber = phoneNumber || business.phoneNumber;
+  
+      // Handle image updates
+      if (req.files && req.files.length > 0) {
+        // Upload all new images to Cloudinary
+        const uploadPromises = req.files.map((file) => cloudinary.uploader.upload(file.path));
+        const uploadResults = await Promise.all(uploadPromises);
+  
+        // Update the `businessImages` field
+        business.businessImages = uploadResults.map((result) => result.secure_url);
+      }
+  
+      // Save the updated business
+      const updatedBusiness = await business.save();
+  
       res.status(200).json(updatedBusiness);
     } catch (error) {
       console.error('Error updating business:', error);
       res.status(500).json({ message: 'Failed to update business' });
     }
-  }
+  };
+  
 
   const deleteBusinessController = async (req, res) => {
     const { id } = req.params;

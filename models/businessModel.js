@@ -21,6 +21,7 @@ const businessSchema = new mongoose.Schema({
   address: { type: String, required: true },
   rating: { type: Number, min: 0, max: 5, default: 0 },
   description: { type: String },
+  phoneNumber: { type: Number, required: true },
   fees: { type: Number, required: false }, // New field for fees
   years: { type: Number, required: false }, // New field for years
   clients: { type: Number, required: false }, // New field for clients
