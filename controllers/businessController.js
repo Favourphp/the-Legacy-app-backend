@@ -14,54 +14,75 @@ const createBusinessController = async (req, res) => {
     years, 
     clients, 
     phoneNumber,
-    headstoneNames 
+    headstoneNames,
+    reviews,
+    priceStartsFrom // Add this field in the request body
   } = req.body;
 
   try {
     let businessImages = [];
+    let headstoneImage = null; // Initialize to handle headstone-specific image
 
-    // Handle image uploads
-    if (req.files && req.files.length > 0) {
-      const uploadPromises = req.files.map((file) =>
+    // Handle general business image uploads
+    if (req.files.businessImages) {
+      const uploadPromises = req.files.businessImages.map((file) =>
         cloudinary.uploader.upload(file.path)
       );
       const uploadResults = await Promise.all(uploadPromises);
       businessImages = uploadResults.map((result) => result.secure_url);
     }
 
+    // Handle headstone-specific image upload if category is "headstones"
+    if (category.toLowerCase() === "headstones" && req.files.headstoneImage) {
+      const headstoneUploadResult = await cloudinary.uploader.upload(
+        req.files.headstoneImage[0].path
+      );
+      headstoneImage = headstoneUploadResult.secure_url;
+    }
+
     // Build the business object
     const newBusinessData = {
       category,
       businessName,
-      businessImages: businessImages,
+      businessImages,
       address,
       rating,
       description,
       fees, // Store as a number in the database
       years,
       clients,
+      reviews,
       phoneNumber,
     };
 
-    // Add headstoneNames only if the category is "headstones"
-    if (category.toLowerCase() === "headstones" && headstoneNames) {
-      newBusinessData.headstoneNames = Array.isArray(headstoneNames)
-        ? headstoneNames
-        : [headstoneNames];
+    // Add headstone-specific fields if category is "headstones"
+    if (category.toLowerCase() === "headstones") {
+      if (headstoneNames) {
+        newBusinessData.headstoneNames = Array.isArray(headstoneNames)
+          ? headstoneNames
+          : [headstoneNames];
+      }
+      if (priceStartsFrom) {
+        newBusinessData.priceStartsFrom = priceStartsFrom; // Store as a number
+      }
+      if (headstoneImage) {
+        newBusinessData.headstoneImage = headstoneImage;
+      }
     }
 
     // Create a new business entry
     const newBusiness = new Business(newBusinessData);
-    console.log("Uploaded Files:", req.files);
-
 
     // Save the business to the database
     const savedBusiness = await newBusiness.save();
 
-    // Format fees with a dollar sign before sending the response
+    // Format fees and priceStartsFrom with a dollar sign before sending the response
     const responseBusiness = {
       ...savedBusiness._doc,
-      fees: `$${savedBusiness.fees.toLocaleString()}`, // Format as "$1,000" for example
+      fees: `$${savedBusiness.fees.toLocaleString()}`, // Format fees
+      ...(savedBusiness.priceStartsFrom && {
+        priceStartsFrom: `$${savedBusiness.priceStartsFrom.toLocaleString()}`,
+      }), // Format priceStartsFrom if it exists
     };
 
     // Respond with the formatted business
@@ -87,13 +108,23 @@ const createBusinessController = async (req, res) => {
 
   const updateBusinessController = async (req, res) => {
     const { id } = req.params;
-    const { businessName, address, rating, description, fees, years, clients, phoneNumber } = req.body;
+    const {
+      businessName,
+      address,
+      rating,
+      description,
+      fees,
+      years,
+      clients,
+      phoneNumber,
+      reviews,
+    } = req.body;
   
     try {
       // Find the business
       const business = await Business.findById(id);
       if (!business) {
-        return res.status(404).json({ message: 'Business not found' });
+        return res.status(404).json({ message: "Business not found" });
       }
   
       // Update business fields
@@ -105,14 +136,16 @@ const createBusinessController = async (req, res) => {
       business.years = years || business.years;
       business.clients = clients || business.clients;
       business.phoneNumber = phoneNumber || business.phoneNumber;
+      business.reviews = reviews || business.reviews;
   
-      // Handle image updates
-      if (req.files && req.files.length > 0) {
-        // Upload all new images to Cloudinary
-        const uploadPromises = req.files.map((file) => cloudinary.uploader.upload(file.path));
+      // Handle `businessImages` updates
+      if (req.files && req.files.businessImages) {
+        const uploadPromises = req.files.businessImages.map((file) =>
+          cloudinary.uploader.upload(file.path)
+        );
         const uploadResults = await Promise.all(uploadPromises);
   
-        // Update the `businessImages` field
+        // Update the `businessImages` field with new images
         business.businessImages = uploadResults.map((result) => result.secure_url);
       }
   
@@ -121,10 +154,11 @@ const createBusinessController = async (req, res) => {
   
       res.status(200).json(updatedBusiness);
     } catch (error) {
-      console.error('Error updating business:', error);
-      res.status(500).json({ message: 'Failed to update business' });
+      console.error("Error updating business:", error);
+      res.status(500).json({ message: "Failed to update business" });
     }
   };
+  
   
 
   const deleteBusinessController = async (req, res) => {
@@ -140,6 +174,55 @@ const createBusinessController = async (req, res) => {
       res.status(500).json({ message: 'Failed to delete business' });
     }
   }
+
+  const deleteBusinessImagesController = async (req, res) => {
+    const { id } = req.params;
+    const { imagesToDelete } = req.body; // Array of image URLs to delete
+  
+    if (!Array.isArray(imagesToDelete) || imagesToDelete.length === 0) {
+      return res.status(400).json({ message: 'No images specified for deletion' });
+    }
+  
+    try {
+      // Find the business
+      const business = await Business.findById(id);
+      if (!business) {
+        return res.status(404).json({ message: 'Business not found' });
+      }
+  
+      // Filter out the images to delete from the `businessImages` array
+      const remainingImages = business.businessImages.filter(
+        (image) => !imagesToDelete.includes(image)
+      );
+  
+      // Check if all images were successfully removed
+      if (remainingImages.length === business.businessImages.length) {
+        return res
+          .status(400)
+          .json({ message: 'No matching images found to delete' });
+      }
+  
+      // Update the `businessImages` field
+      business.businessImages = remainingImages;
+      await business.save();
+  
+      // Optionally delete the images from Cloudinary
+      const deletePromises = imagesToDelete.map((imageUrl) => {
+        const publicId = imageUrl.split('/').pop().split('.')[0]; // Extract public_id
+        return cloudinary.uploader.destroy(publicId);
+      });
+      await Promise.all(deletePromises);
+  
+      res.status(200).json({
+        message: 'Images deleted successfully',
+        remainingImages: business.businessImages,
+      });
+    } catch (error) {
+      console.error('Error deleting business images:', error);
+      res.status(500).json({ message: 'Failed to delete images' });
+    }
+  };
+  
 
   const contactedBusinessController = async (req, res) => {
     const { userId, businessId } = req.body;
@@ -345,4 +428,5 @@ const createBusinessController = async (req, res) => {
         updateBusinessController,
         getBusinessesController,
         contactedBusinessController,
+        deleteBusinessImagesController
     };

@@ -1,6 +1,7 @@
 const chatService = require('./chatService');
 const mongoose = require('mongoose')
 const Message = require('./chatModel');
+const User = require('../models/userModel');
 const { sendChatNotification } = require('./chatService');
 
 
@@ -84,21 +85,98 @@ class ChatController {
     }
 }
 
-  async fetchAllChats(req, res) {
-    try {
-        const { userId } = req.params;
-        const chatHistory = await chatService.getAllChats(userId);
+async fetchAllChats(req, res)  {
+  const { userId } = req.params; // Extract userId from URL params
+  const { limit = 10, page = 1 } = req.query; // Extract pagination parameters
 
-        console.log("chatHistory: ")
+  try {
+    const fetchAllChatIds = async (userId, limit, page) => {
+      const skip = (page - 1) * limit;
 
-        res.status(200).json({ success: true, data: chatHistory });
-    } catch (error) {
-      res.status(500).json({ success: false, message: "Error fetching chat history", error: error.message });
-    }
+      // Use new mongoose.Types.ObjectId to ensure it's a valid ObjectId
+      const userObjectId = new mongoose.Types.ObjectId(userId);
+
+      const chatIds = await Message.aggregate([
+        {
+          $match: {
+            $or: [
+              { sender: userObjectId },
+              { receiver: userObjectId }
+            ],
+          },
+        },
+        {
+          $group: {
+            _id: {
+              senderReceiverPair: {
+                $cond: [
+                  { $lte: [{ $toString: "$sender" }, { $toString: "$receiver" }] },
+                  { sender: "$sender", receiver: "$receiver" },
+                  { sender: "$receiver", receiver: "$sender" },
+                ]
+              }
+            },
+            lastMessageTimestamp: { $max: "$timestamp" },
+          },
+        },
+        { $sort: { lastMessageTimestamp: -1 } },
+        { $skip: skip },
+        { $limit: limit },
+      ]);
+
+      console.log("Chat IDs aggregation:", chatIds);
+
+      const populatedChatIds = await Promise.all(
+        chatIds.map(async (chat) => {
+          const otherUserId =
+            chat._id.senderReceiverPair.sender.toString() === userObjectId.toString()
+              ? chat._id.senderReceiverPair.receiver
+              : chat._id.senderReceiverPair.sender;
+
+          const otherUser = await User.findById(otherUserId).select("name");
+          console.log('Other user:', otherUser);
+
+          return {
+            chatId: chat._id,
+            lastMessageTimestamp: chat.lastMessageTimestamp,
+            otherUserDetails: otherUser,
+          };
+        })
+      );
+
+      const totalChats = await Message.countDocuments({
+        $or: [{ sender: userObjectId }, { receiver: userObjectId }],
+      });
+
+      return {
+        chatIds: populatedChatIds,
+        pagination: {
+          total: totalChats,
+          limit,
+          page,
+          totalPages: Math.ceil(totalChats / limit),
+        },
+      };
+    };
+
+    const result = await fetchAllChatIds(userId, parseInt(limit), parseInt(page));
+
+    console.log("Fetched chat data:", result.chatIds);
+
+    res.status(200).json({
+      success: true,
+      data: result.chatIds,
+      pagination: result.pagination,
+    });
+  } catch (error) {
+    console.error("Error fetching chat IDs:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch chat IDs",
+    });
+  }
+};
 }
-
-    }
-
-
 
 module.exports = ChatController;

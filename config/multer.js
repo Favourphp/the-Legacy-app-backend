@@ -17,10 +17,16 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
+
+
 const upload = multer({ storage, fileFilter });
 
+const uploadFields = upload.fields([
+  { name: "businessImages", maxCount: 10 },
+  { name: "headstoneImage", maxCount: 1 },
+]);
 // Export upload logic for single or multiple files
 module.exports = {
   uploadSingle: upload.single("profileImage"), // For single file upload
-  uploadMultiple: upload.array("businessImages", 10), // For multiple file uploads (max 10)
+  uploadFields 
 };
