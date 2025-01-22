@@ -33,11 +33,12 @@ const createBusinessController = async (req, res) => {
     }
 
     // Handle headstone-specific image upload if category is "headstones"
-    if (category.toLowerCase() === "headstones" && req.files.headstoneImage) {
-      const headstoneUploadResult = await cloudinary.uploader.upload(
-        req.files.headstoneImage[0].path
+    if (req.files.headstoneImage) {
+      const uploadPromises = req.files.headstoneImage.map((file) =>
+        cloudinary.uploader.upload(file.path)
       );
-      headstoneImage = headstoneUploadResult.secure_url;
+      const uploadResults = await Promise.all(uploadPromises);
+      headstoneImage = uploadResults.map((result) => result.secure_url);
     }
 
     // Build the business object
@@ -63,10 +64,14 @@ const createBusinessController = async (req, res) => {
           : [headstoneNames];
       }
       if (priceStartsFrom) {
-        newBusinessData.priceStartsFrom = priceStartsFrom; // Store as a number
+        newBusinessData.priceStartsFrom = Array.isArray(priceStartsFrom)
+        ? priceStartsFrom
+        : [priceStartsFrom]; // Store as a number
       }
       if (headstoneImage) {
-        newBusinessData.headstoneImage = headstoneImage;
+        newBusinessData.headstoneImage =Array.isArray(headstoneImage)
+        ? headstoneImage
+        : [headstoneImage]
       }
     }
 

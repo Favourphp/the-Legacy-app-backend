@@ -27,8 +27,8 @@ const businessSchema = new mongoose.Schema({
   clients: { type: Number, required: false }, // New field for clients
   headstoneNames: [String], 
   reviews:{ type: String, required: false }, 
-  priceStartsFrom: {type: Number, required: false},
-  headstoneImage: { type: String},
+  priceStartsFrom: [Number],
+  headstoneImage: [String],
 });
 
 const Business = mongoose.model('Business', businessSchema);

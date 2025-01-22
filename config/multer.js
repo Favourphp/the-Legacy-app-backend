@@ -23,7 +23,7 @@ const upload = multer({ storage, fileFilter });
 
 const uploadFields = upload.fields([
   { name: "businessImages", maxCount: 10 },
-  { name: "headstoneImage", maxCount: 1 },
+  { name: "headstoneImage", maxCount: 10 },
 ]);
 // Export upload logic for single or multiple files
 module.exports = {
