@@ -12,8 +12,6 @@ const cloudinary = require("../config/cloudinary");
 //=========================Register user=======================================
 const registerController = async (req, res) => {
   try {
-    // const token = jwt.sign({ email: req.body.email }, process.env.JWT_SECRET);
-
     const {
       fullName,
       email,
@@ -21,7 +19,7 @@ const registerController = async (req, res) => {
       password2,
     } = req.body;
 
-    //Check if user with the same email already exists
+    // Check if user with the same email already exists
     const existingUser = await User.findOne({
       email: email,
     });
@@ -32,16 +30,17 @@ const registerController = async (req, res) => {
     }
     if (password !== password2) {
       return res.status(400).json({
-        message: "the passwords do not match",
+        message: "The passwords do not match",
       });
     }
     
-    //Hash the password
+    // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Generate password reset token
-    const confirmationCode = Math.floor(10000 + Math.random() * 90000);// generate 5 digits number
+    // Generate confirmation code
+    const confirmationCode = Math.floor(10000 + Math.random() * 90000); // generate 5 digits number
     console.log(confirmationCode);
+
     // Create and save a new user
     const user = await User.create({
       fullName,
@@ -50,7 +49,7 @@ const registerController = async (req, res) => {
       confirmationCode: confirmationCode,
       status: "pending",
     });
-    // console.log(user._id.toString());
+
     const userID = user._id.toString();
     sendConfirmationEmail(
       req.headers.host,
@@ -60,17 +59,31 @@ const registerController = async (req, res) => {
       userID
     );
 
-    // Return a success response
+    // Generate JWT token
+    const token = jwt.sign(
+      {
+        userId: user._id,
+        email: user.email,
+        fullName: user.fullName,
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "1hr",
+      }
+    );
+
+    // Return a success response with the token
     return res.status(201).json({
       message: "User registered successfully",
       userId: userID,
+      token: token,
     });
   } catch (error) {
     // Handling errors
     console.error("Error registering user: ", error);
     return res.status(500).json({
       message: "An error occurred during registration",
-      error: error,
+      error: error.message,
     });
   }
 };
@@ -98,20 +111,24 @@ const verifyController = async (req, res) => {
     return res.status(401).json({message: "Invalid Code"});
   } catch (error) {
     console.error("Error verifying user: ", error);
-    res.status(500).json({message: "An error occurred while verifying"});
+    res.status(500).json({message: "An error occurred while verifying", error: error.message});
   }
 };
 
 //================== LOGIN USER =======================
 const loginController = async (req, res) => {
   const {email, password} = req.body;
-  // Generate password reset token
-  // const confirmationCode = short.generate(); // 73WakrfVbNJBaAmhQtEeDv
 
   try {
     const foundUser = await User.findOne({
       email: email,
     });
+
+    if (!foundUser) {
+      return res.status(404).json({
+        message: "Invalid Credentials - User not found",
+      });
+    }
 
     //check verification
     if (foundUser.status !== "Active") {
@@ -120,18 +137,12 @@ const loginController = async (req, res) => {
       });
     }
 
-    if (!foundUser) {
-      res.status(404).json({
-        message: "Invalid Credentials - User not found",
-      }); //in production, only 'Invalid Credentials'
-    }
-
     const checkPassword = await bcrypt.compare(password, foundUser.password);
 
     if (!checkPassword) {
-      res.status(401).json({
+      return res.status(401).json({
         message: "Invalid Credentials - Wrong password",
-      }); //in production, only 'Invalid Credentials'
+      });
     } else {
       const token = jwt.sign(
         {
@@ -160,11 +171,14 @@ const loginController = async (req, res) => {
      });
    }
   } catch (error) {
+    console.error("Error logging in user: ", error);
     return res.status(500).json({
       message: "Error While Trying To Login, Try Again",
+      error: error.message,
     });
   }
 };
+
 //================ FORGET PASSWORD ===============
 const forgetPassword = async (req, res) => {
   try {
@@ -188,8 +202,6 @@ const forgetPassword = async (req, res) => {
 
     forgetPasswordEmail(req.headers.host, user.firstName, email, resetToken);
 
-
-
     // Return a success response
     return res.status(200).json({
       message: 'Password reset code sent to your email.',
@@ -198,6 +210,7 @@ const forgetPassword = async (req, res) => {
     console.error('Error sending password reset email:', error);
     return res.status(500).json({
       error: 'An error occurred while sending the password reset email.',
+      details: error.message,
     });
   }
 };
@@ -254,6 +267,7 @@ const resetPassword = async (req, res) => {
     console.error("Error resetting password", error);
     res.status(500).json({
       error: "An error occurred while resetting the password.",
+      details: error.message,
     });
   }
 };
@@ -262,6 +276,7 @@ const resetPassword = async (req, res) => {
 const logout = (req, res, next) => {
   req.logout(function (err) {
     if (err) {
+      console.error("Error logging out user: ", err);
       return next(err);
     }
   });
@@ -270,6 +285,7 @@ const logout = (req, res, next) => {
     message: "user logged out",
   });
 };
+
 //================ GET USER ====================
 const getProfile = async (req, res) => {
   console.log(req.user);
@@ -285,13 +301,13 @@ const getProfile = async (req, res) => {
 
     res.status(200).json({user});
   } catch (error) {
-    res.status(500).json({message: "Error while fetching profile"});
+    console.error("Error fetching user profile: ", error);
+    res.status(500).json({message: "Error while fetching profile", error: error.message});
   }
 };
 
 //================== EDIT USER================
 const editProfile = async (req, res) => {
-
   try {
     const {userID} = req.params;
     const user = await User.findOne({
@@ -309,33 +325,34 @@ const editProfile = async (req, res) => {
       user.profileImage = uploadResult.secure_url; // Assign the new profile photo URL
     }
 
-
     await user.save();
 
     res.status(200).json({message: "Profile Updated Successfully", user});
   } catch (error) {
-    res.status(500).json({message: "Error while updating profile"});
+    console.error("Error updating user profile: ", error);
+    res.status(500).json({message: "Error while updating profile", error: error.message});
   }
 };
 
 const submitSurvey = async (req, res) => {
   const { userId, responses } = req.body;
 
+  try {
     // Validate userId exists
     const user = await User.findById(userId);
     if (!user) {
         return res.status(404).json({ error: 'User not found.' });
     }
 
-  if (!userId || !responses || !Array.isArray(responses)) {
-    return res.status(400).json({ error: 'Invalid request data' });
-  }
+    if (!userId || !responses || !Array.isArray(responses)) {
+      return res.status(400).json({ error: 'Invalid request data' });
+    }
 
-  try {
     const surveyResponse = new SurveyResponse({ userId, responses });
     await surveyResponse.save();
     res.status(201).json({ message: 'Survey responses saved successfully!' });
   } catch (error) {
+    console.error("Error submitting survey responses: ", error);
     res.status(500).json({ error: 'Internal Server Error', details: error.message });
   }
 };
@@ -348,6 +365,7 @@ const getUserSurveyResonse = async (req, res) => {
     }
     res.status(200).json(surveyResponses);
   } catch (error) {
+    console.error("Error fetching survey responses: ", error);
     res.status(500).json({ error: 'Internal Server Error', details: error.message });
   }
 };

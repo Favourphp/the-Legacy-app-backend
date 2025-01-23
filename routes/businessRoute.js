@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const verifyToken = require('../middlewares/verifyToken');
 const {uploadFields} = require('../config/multer');
 
 const { 
@@ -14,10 +15,10 @@ const {
  } = require('../controllers/businessController');
 
 
-router.post('/', uploadFields, createBusinessController)  
-router.get('/:category', getBusinessesController);
-router.put('/:id', uploadFields, updateBusinessController);
-router.delete('/:id', deleteBusinessController);
+router.post('/', verifyToken, uploadFields, createBusinessController)  
+router.get('/:category',verifyToken, getBusinessesController);
+router.put('/:id', verifyToken, uploadFields, updateBusinessController);
+router.delete('/:id', verifyToken, deleteBusinessController);
 router.post('/create-contact', contactedBusinessController)
 router.get('/:userId', getContactedBusinessesController)
 router.get('/contact-status/:userId/:businessId', checkBusinessContactStatus);

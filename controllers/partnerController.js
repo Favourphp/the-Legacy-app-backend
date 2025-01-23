@@ -13,64 +13,76 @@ const cloudinary = require("../config/cloudinary");
 
 //=========================Register user=======================================
 const registerController = async (req, res) => {
-    try {
-      const { fullName, email, password, password2, businessId } = req.body;
-  
-      // Validate businessId
-      if (!mongoose.Types.ObjectId.isValid(businessId)) {
-        return res.status(400).json({ message: 'Invalid business ID' });
-      }
-  
-      // Check if business exists
-      const business = await Business.findById(businessId);
-      if (!business) {
-        return res.status(404).json({ message: 'Business not found' });
-      }
-  
-      // Check if user with the same email already exists
-      const existingUser = await Partner.findOne({ email });
-      if (existingUser) {
-        return res.status(400).json({ message: 'User already exists' });
-      }
-  
-      if (password !== password2) {
-        return res.status(400).json({ message: 'Passwords do not match' });
-      }
-  
-      // Hash the password
-      const hashedPassword = await bcrypt.hash(password, 10);
+  try {
+    const { fullName, email, password, password2, businessId } = req.body;
 
-      const confirmationCode = Math.floor(10000 + Math.random() * 90000);// generate 5 digits number
-      console.log(confirmationCode);
-  
-      // Create the partner
-      const partner = await Partner.create({
-        fullName,
-        email,
-        password: hashedPassword,
-        confirmationCode: confirmationCode,
-        businessId: business._id, // Link to the business
-      });
-
-      const userID = partner._id.toString();
-      sendConfirmationEmail(
-        req.headers.host,
-        partner.firstName, 
-        partner.email,
-        partner.confirmationCode,
-        userID
-      );
-  
-      return res.status(201).json({
-        message: 'User registered successfully',
-        userId: partner._id,
-        businessId: partner.businessId,
-      });
-    } catch (error) {
-      console.error('Error registering partner:', error);
-      return res.status(500).json({ message: 'An error occurred during registration' });
+    // Validate businessId
+    if (!mongoose.Types.ObjectId.isValid(businessId)) {
+      return res.status(400).json({ message: 'Invalid business ID' });
     }
-  };
+
+    // Check if business exists
+    const business = await Business.findById(businessId);
+    if (!business) {
+      return res.status(404).json({ message: 'Business not found' });
+    }
+
+    // Check if user with the same email already exists
+    const existingUser = await Partner.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: 'User already exists' });
+    }
+
+    if (password !== password2) {
+      return res.status(400).json({ message: 'Passwords do not match' });
+    }
+
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const confirmationCode = Math.floor(10000 + Math.random() * 90000); // generate 5 digits number
+    console.log(confirmationCode);
+
+    // Create the partner
+    const partner = await Partner.create({
+      fullName,
+      email,
+      password: hashedPassword,
+      confirmationCode: confirmationCode,
+      businessId: business._id, // Link to the business
+    });
+
+    const userID = partner._id.toString();
+    sendConfirmationEmail(
+      req.headers.host,
+      partner.firstName,
+      partner.email,
+      partner.confirmationCode,
+      userID
+    );
+
+    // Generate JWT token
+    const token = jwt.sign(
+      {
+        userId: partner._id,
+        email: partner.email,
+        fullName: partner.fullName,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "1hr" }
+    );
+
+    return res.status(201).json({
+      message: 'User registered successfully',
+      userId: partner._id,
+      businessId: partner.businessId,
+      token: token,
+    });
+  } catch (error) {
+    console.error('Error registering partner:', error);
+    return res.status(500).json({ message: 'An error occurred during registration' });
+  }
+};
   
 
 //================ Verify controller ===========================
