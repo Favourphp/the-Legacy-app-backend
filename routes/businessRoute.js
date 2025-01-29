@@ -16,8 +16,8 @@ const {
 
 
 router.post('/', verifyToken, uploadFields, createBusinessController)  
-router.get('/:category',verifyToken, getBusinessesController);
-router.put('/:id', verifyToken, uploadFields, updateBusinessController);
+router.get('/:category', getBusinessesController);
+router.put('/:id', uploadFields, updateBusinessController);
 router.delete('/:id', verifyToken, deleteBusinessController);
 router.post('/create-contact', contactedBusinessController)
 router.get('/:userId', getContactedBusinessesController)

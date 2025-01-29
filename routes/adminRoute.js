@@ -11,7 +11,7 @@ const {
   logout,
   getProfile,
   editProfile,
-} = require("../controllers/partnerController");
+} = require("../controllers/adminController");
 
 
 

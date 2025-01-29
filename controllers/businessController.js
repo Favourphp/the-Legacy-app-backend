@@ -113,6 +113,8 @@ const updateBusinessController = async (req, res) => {
     clients,
     phoneNumber,
     reviews,
+    headstoneNames,
+    priceStartsFrom
   } = req.body;
 
   try {
@@ -121,6 +123,7 @@ const updateBusinessController = async (req, res) => {
       return res.status(404).json({ message: "Business not found" });
     }
 
+    // Update text fields or basic details
     business.businessName = businessName || business.businessName;
     business.address = address || business.address;
     business.rating = rating || business.rating;
@@ -131,14 +134,33 @@ const updateBusinessController = async (req, res) => {
     business.phoneNumber = phoneNumber || business.phoneNumber;
     business.reviews = reviews || business.reviews;
 
+    // Override headstone details
+    if (headstoneNames) {
+      business.headstoneNames = Array.isArray(headstoneNames) ? headstoneNames : [headstoneNames];
+    }
+
+    if (priceStartsFrom) {
+      business.priceStartsFrom = Array.isArray(priceStartsFrom) ? priceStartsFrom : [priceStartsFrom];
+    }
+
+    if (req.files && req.files.headstoneImage) {
+      const uploadPromises = req.files.headstoneImage.map((file) =>
+        cloudinary.uploader.upload(file.path)
+      );
+      const uploadResults = await Promise.all(uploadPromises);
+      business.headstoneImage = uploadResults.map((result) => result.secure_url); // Overwrite existing images
+    }
+
+    // Override businessImages if provided
     if (req.files && req.files.businessImages) {
       const uploadPromises = req.files.businessImages.map((file) =>
         cloudinary.uploader.upload(file.path)
       );
       const uploadResults = await Promise.all(uploadPromises);
-      business.businessImages = uploadResults.map((result) => result.secure_url);
+      business.businessImages = uploadResults.map((result) => result.secure_url); // Overwrite existing images
     }
 
+    // Save updated business
     const updatedBusiness = await business.save();
     res.status(200).json(updatedBusiness);
   } catch (error) {
@@ -146,6 +168,8 @@ const updateBusinessController = async (req, res) => {
     res.status(500).json({ message: "Failed to update business", error: error.message });
   }
 };
+
+
 
 const deleteBusinessController = async (req, res) => {
   const { id } = req.params;

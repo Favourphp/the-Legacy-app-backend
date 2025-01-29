@@ -9,8 +9,6 @@ const { PubSub } = require("@google-cloud/pubsub");
 const http = require("http");
 const WebSocket = require("ws");
 
-
-
 const Message = require("./chats/chatModel");
 const Notification = require("./notifications/notificationModel");
 const cloudinary = require("./config/cloudinary");
@@ -21,6 +19,7 @@ const chatRoute = require("./chats/chatRoute");
 const notificationRoute = require("./notifications/notificationRoute");
 const businessRoute = require("./routes/businessRoute");
 const partnerRoute = require("./routes/partnerRoute");
+const adminRoute = require("./routes/adminRoute");
 
 // Initialize express
 const app = express();
@@ -64,11 +63,11 @@ app.use("/api/chats", chatRoute);
 app.use("/api/businesses", businessRoute);
 app.use("/api/notification", notificationRoute);
 app.use("/api/partner", partnerRoute);
+app.use("/api/admin", adminRoute);
 
 // Initialize Pub/Sub client
 const pubSubClient = new PubSub({
-  projectId: "", // Update with your project ID
-  keyFilename: "", // Path to your service account key file
+ / Path to your service account key file
 });
 
 const connectedUsers = new Map(); // Map to store connected users by userId
@@ -117,10 +116,11 @@ wss.on("connection", (ws) => {
         await newChatMessage.save();
 
         // Save the notification to the Notification model
+        const notificationContent = imagePath ? "sent a photo" : "sent a message";
         const newNotification = new Notification({
           sender: senderId,
           receiver: receiverId,
-          content,
+          content: notificationContent,
           image: imagePath,
           timestamp: new Date(),
           read: false,
@@ -142,7 +142,7 @@ wss.on("connection", (ws) => {
           console.log(`User ${receiverId} is offline. Publishing to Pub/Sub...`);
           await publishNotification("notifications-topic", {
             receiverId,
-            content,
+            content: notificationContent,
             image: imagePath,
             timestamp: new Date(),
           });
