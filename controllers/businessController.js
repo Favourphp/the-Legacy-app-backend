@@ -169,6 +169,32 @@ const updateBusinessController = async (req, res) => {
   }
 };
 
+const getRecentBusinessController = async (req, res) => {
+  try {
+    console.log('Fetching the most recent business...');
+
+    // Log before the query
+    const businessesCount = await Business.countDocuments(); 
+    console.log('Total businesses in the database:', businessesCount);
+
+    const recentBusiness = await Business.findOne().sort({ timestamp: -1 });
+
+    // Log the result from the query
+    console.log('Recent business data:', recentBusiness);
+
+    if (!recentBusiness) {
+      return res.status(404).json({ message: "No businesses found" });
+    }
+
+    res.status(200).json(recentBusiness);
+  } catch (error) {
+    console.error("Error fetching recent business:", error);
+    res.status(500).json({ message: "Failed to fetch recent business", error: error.message });
+  }
+};
+
+
+
 
 
 const deleteBusinessController = async (req, res) => {
@@ -374,5 +400,6 @@ module.exports = {
   updateBusinessController,
   getBusinessesController,
   contactedBusinessController,
-  deleteBusinessImagesController
+  deleteBusinessImagesController,
+  getRecentBusinessController
 };

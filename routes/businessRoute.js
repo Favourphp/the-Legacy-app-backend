@@ -11,11 +11,12 @@ const {
     contactedBusinessController,
     getContactedBusinessesController,
     checkBusinessContactStatus,
-    deleteBusinessImagesController
+    deleteBusinessImagesController,
+    getRecentBusinessController
  } = require('../controllers/businessController');
 
 
-router.post('/', verifyToken, uploadFields, createBusinessController)  
+router.post('/', uploadFields, createBusinessController)  
 router.get('/:category', getBusinessesController);
 router.put('/:id', uploadFields, updateBusinessController);
 router.delete('/:id', verifyToken, deleteBusinessController);
@@ -23,5 +24,6 @@ router.post('/create-contact', contactedBusinessController)
 router.get('/:userId', getContactedBusinessesController)
 router.get('/contact-status/:userId/:businessId', checkBusinessContactStatus);
 router.delete('/:id/images', deleteBusinessImagesController);
+router.get('/recent', getRecentBusinessController)
 
 module.exports = router;

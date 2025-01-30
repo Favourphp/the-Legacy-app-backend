@@ -67,7 +67,7 @@ app.use("/api/admin", adminRoute);
 
 // Initialize Pub/Sub client
 const pubSubClient = new PubSub({
- / Path to your service account key file
+
 });
 
 const connectedUsers = new Map(); // Map to store connected users by userId

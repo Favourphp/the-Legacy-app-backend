@@ -15,7 +15,6 @@ const businessSchema = new mongoose.Schema({
     ],
     required: true,
   },
-  category: { type: String, required: true },
   businessName: { type: String, required: true },
   businessImages: [String], // Array for multiple images
   address: { type: String, required: true },
@@ -29,7 +28,10 @@ const businessSchema = new mongoose.Schema({
   reviews:{ type: String, required: false }, 
   priceStartsFrom: [Number],
   headstoneImage: [String],
-});
+
+},
+{ timestamps: true },
+);
 
 const Business = mongoose.model('Business', businessSchema);
 

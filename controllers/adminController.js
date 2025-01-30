@@ -42,7 +42,7 @@ const registerController = async (req, res) => {
     console.log(confirmationCode);
 
     // Create and save a new user
-    const user = await User.create({
+    const user = await Admin.create({
       fullName,
       email,
       password: hashedPassword,
@@ -93,7 +93,7 @@ const verifyController = async (req, res) => {
   try {
     const {userID} = req.params;
     const {confirmationCode} = req.body;
-    const user = await User.findOne({
+    const user = await Admin.findOne({
       _id: userID,
     });
     console.log(user, userID);
